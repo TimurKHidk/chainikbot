@@ -2,8 +2,12 @@ import discord
 import aiohttp
 from discord.ext import commands
 import random
+from discord.utils import get
+from youtube_dl import YoutubeDL
 
-
+YDL_OPTIONS = {'format': 'worstaudio/best', 'noplaylist': 'False', 'simulate': 'True',
+               'preferredquality': '192', 'preferredcodec': 'mp3', 'key': 'FFmpegExtractAudio'}
+FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
 TOKEN ='OTYzODExMTU0NzE3NzI4Nzc4.YlbhFg.Dd7I1Df0L4Qggqv56EJsGwcpzAQ'
 bot = commands.Bot(command_prefix=('+'))
 
@@ -15,5 +19,38 @@ async def mem(ctx):
                 res = await r.json()
                 embed.set_image(url=res['data']['children'] [random.randint(0, 25)]['data']['url'])
                 await ctx.send(embed=embed)
+
+@bot.command()    
+async def news(ctx):
+        embed = discord.Embed(title="News")  
+        async with aiohttp.ClientSession() as cs:
+            async with cs.get('https://www.reddit.com/r/news/new.json?sort=hot') as r:
+                res = await r.json()
+                embed.add_field(name='news from reddit', value=res['data']['children'] [random.randint(0, 25)]['data']['url'])
+                await ctx.send(embed=embed)
+
+@bot.command()
+async def leave(ctx):
+    channel = ctx.message.author.voice.channel
+    voice = get(bot.voice_clients, guild = ctx.guild)
+    if voice and voice.is_connected():
+        await voice.disconnect()
+    else:
+        voice = await channel.connect()
+        await ctx.send('батя не в здании')
+
+@bot.command()
+async def play(ctx, *, arg):
+    vc = await ctx.message.author.voice.channel.connect()
+ 
+    with YoutubeDL(YDL_OPTIONS) as ydl:
+        if 'https://' in arg:
+            info = ydl.extract_info(arg, download=False)
+        else:
+            info = ydl.extract_info(f"ytsearch:{arg}", download=False)['entries'][0]
+ 
+    url = info['formats'][0]['url']
+ 
+    vc.play(discord.FFmpegPCMAudio(executable="ffmpeg\\ffmpeg.exe", source=url, **FFMPEG_OPTIONS))
 
 bot.run(TOKEN)
