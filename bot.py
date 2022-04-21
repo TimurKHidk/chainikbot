@@ -4,6 +4,7 @@ from discord.ext import commands
 import random
 from youtube_dl import YoutubeDL
 import asyncio
+from googletrans import Translator
 
 YDL_OPTIONS = {'format': 'worstaudio/best', 'noplaylist': 'False', 'simulate': 'True',
                'preferredquality': '192', 'preferredcodec': 'mp3', 'key': 'FFmpegExtractAudio'}
@@ -26,23 +27,46 @@ class Moderation(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    async def serverinfo(self, ctx):
-        name = str(ctx.guild.name)
-        
-        owner = str(ctx.guild.owner)
-        id = str(ctx.guild.id)
-        region = str(ctx.guild.region)
-        memberCount = str(ctx.guild.member_count)
-        
-        icon = str(ctx.guild.icon_url)
-        
-        embed = discord.Embed(title=" Информация про сервер " + name, description="⬇", )
-        embed.set_thumbnail(url=icon)
-        embed.add_field(name="Владелец", value=owner, inline=True)
+    async def serverinfo(ctx):
+        region = ctx.guild.region
+        owner = ctx.guild.owner.mention
+        memberCount = ctx.guild.member_count
+        all = len(ctx.guild.members)
+        icon = ctx.guild.icon_url
+        id = ctx.guild.id
+        members = len(list(filter(lambda m: not m.bot, ctx.guild.members)))
+        bots = len(list(filter(lambda m: m.bot, ctx.guild.members)))
+        statuses = [len(list(filter(lambda m: str(m.status) == "online", ctx.guild.members))),
+                    len(list(filter(lambda m: str(m.status) == "idle", ctx.guild.members))),
+                    len(list(filter(lambda m: str(m.status) == "dnd", ctx.guild.members))),
+                    len(list(filter(lambda m: str(m.status) == "offline", ctx.guild.members)))]
+        channels = [len(list(filter(lambda m: str(m.type) == "text", ctx.guild.channels))),
+                    len(list(filter(lambda m: str(m.type) == "voice", ctx.guild.channels)))]
+        embed = discord.Embed(title=f"{ctx.guild} information")
+        embed.add_field(name="Статусы", value=f"Онлайн: {statuses[0]},   Неактивен: {statuses[1]},   Не беспокоить: {statuses[2]},   Не в сети: {statuses[3]}")
+        embed.add_field(name="Участники", value=f"Все: {all},   Люди: {members},   Боты: {bots}")
+        embed.add_field(name="Каналы", value=f"Все: {channels[0] + channels[1]},   Текстовые каналы: {channels[0]},   Звуковые каналы: {channels[1]}")
         embed.add_field(name="Сервер ID", value=id, inline=True)
-        embed.add_field(name="Регион", value=region, inline=True)
+        embed.set_thumbnail(url=icon)
+        embed.add_field(name="Регион", value=region)
+        embed.add_field(name="Владелец", value=owner)
         embed.add_field(name="Кол-во участников", value=memberCount, inline=True)
-        
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    async def userinfo(ctx, member: discord.Member = None):
+        if member is None:
+            member = ctx.author
+        roles = [role for role in member.roles]
+        embed = discord.Embed(title=f"Info {member.name}")
+        embed.set_thumbnail(url=member.avatar_url)
+        embed.add_field(name="ID", value=member.id, inline=True)
+        embed.add_field(name="Ник", value=member.display_name, inline=True)
+        embed.add_field(name="Аккаунт создан", value=member.created_at.strftime("%d.%m.%Y %H:%M:%S"), inline=True)
+        embed.add_field(name="Присоединился", value=member.joined_at.strftime("%d.%m.%Y %H:%M:%S"), inline=True)
+        embed.add_field(name="Роли", value="".join(role.mention for role in roles), inline=True)
+        embed.add_field(name="Лучшая роль", value=member.top_role.mention, inline=True)
+        embed.add_field(name="Бот?", value=member.bot, inline=True)
         await ctx.send(embed=embed)
         
     @commands.command()
@@ -60,16 +84,57 @@ class Moderation(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def mute(self, ctx, member: discord.Member):
-        if ctx.message.author.server_permissions.administrator:
-            role = discord.utils.get(member.server.roles, name='Muted')
-            await bot.add_roles(member, role)
-            embed=discord.Embed(title="Пользователь замьючен", description="**{0}** был замьючен пользователем **{1}**!".format(member, ctx.message.author), color=discord.Color.red())
-            await ctx.send(embed=embed)
-        else:
-            embed=discord.Embed(title="Нет доступа", description="У вас недостаточно прав для этой команды", color=discord.Color.red())
-            await ctx.send(embed=embed)
+    async def mute(ctx, member: discord.Member = None, time = None,  *, reason=None):
+        await member.move_to(channel=None)
+        mute = discord.utils.get(ctx.guild.roles, name="Muted")
+        await member.add_roles(mute)
+        async def unm(member: discord.Member = None):
+            mute = discord.utils.get(ctx.guild.roles, name="Muted")
+            await member.remove_roles(mute)
+            
+        if member:
+            if time: 
+                time_letter = time[-1:] 
+                time_numbers = int(time[:-1]) 
+                
+                def t(time_letter): 
+                    if time_letter == 's':
+                        return 1
+                    if time_letter == 'm':
+                        return 60
+                    if time_letter == 'h':
+                        return 60*60
+                    if time_letter == 'd':
+                        return 60*60*24
+                        
+                if reason:
+                    await ctx.send(embed=discord.Embed(description=f'Пользователь {member.mention} был замьючен \nВремя: {time} \nПричина: {reason}' ))
+                    
+                    await asyncio.sleep(time_numbers*t(time_letter))
 
+                    await unm(member)
+                    await ctx.send(f'Пользователь {member.mention} размьючен')
+                else:
+                    await ctx.send(embed=discord.Embed(description=f'Пользователь {member.mention} был замьючен \nВремя: {time}'))
+                
+                    await asyncio.sleep(time_numbers*t(time_letter))
+
+                    await unm(member)
+                    await ctx.send(f'Пользователь {member.mention} размьючен')
+            else:
+                await ctx.send(embed=discord.Embed(description=f'Пользователь {member.mention} был замьючен'))
+
+                await unm(member)
+                await ctx.send(f'Пользователь {member.mention} размьючен')
+        else: 
+            await ctx.send('Введите имя пользователя')
+            
+    @commands.command() 
+    async def unmute(ctx, member: discord.Member = None, *, reason=None):
+        await member.move_to(channel=None)
+        mute = discord.utils.get(ctx.guild.roles, name="Muted")
+        await member.remove_roles(mute)
+        await ctx.send(f'Пользователь {member.mention} был размьючен по причине {reason}')
 
     @commands.command()
     async def kick(self, ctx, member: discord.Member = None, *, reason:str =None):
@@ -157,6 +222,12 @@ class Interactive(commands.Cog):
                 res = await r.json()
                 embed.add_field(name='news from reddit', value=res['data']['children'] [random.randint(0, 25)]['data']['url'])
                 await ctx.send(embed=embed)
+
+    @commands.command()
+    async def translate(self, ctx, lang, *, args):
+        translator = Translator()
+        translation = translator.translate(args, dest=lang)
+        await ctx.send(translation.text)
 
 
 class Music(commands.Cog):
