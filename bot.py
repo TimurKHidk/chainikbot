@@ -85,6 +85,18 @@ class Moderation(commands.Cog):
 
     @commands.command()
     async def mute(ctx, member: discord.Member = None, time = None,  *, reason=None):
+        await member.send(f"{member}, вы были замьючены")          
+        if member is None:
+            return await ctx.send("Участник для мьюта не указан")
+        if member.bot is True:
+                return await ctx.send("Нельзя замьютить бота")
+        if member == ctx.author:
+            return await ctx.send("Нельзя замьютить самого себя")
+        if len(reason) > 70:
+            return await ctx.send("Причина слишком большая")
+        if member and member.top_role.position >= ctx.author.top_role.position:
+            return await ctx.send("Вы не можете замьютить человека чья роль выше вашей")
+        
         await member.move_to(channel=None)
         mute = discord.utils.get(ctx.guild.roles, name="Muted")
         await member.add_roles(mute)
@@ -138,7 +150,18 @@ class Moderation(commands.Cog):
 
     @commands.command()
     async def kick(self, ctx, member: discord.Member = None, *, reason:str =None):
-        await member.send(f"{member}, пока ")
+        await member.send(f"{member}, вы были кикнуты")
+        if member is None:
+            return await ctx.send("Участник для кика не указан")
+        if member.bot is True:
+                return await ctx.send("Нельзя кикнуть бота")
+        if member == ctx.author:
+            return await ctx.send("Нельзя кикнуть самого себя")
+        if len(reason) > 70:
+            return await ctx.send("Причина слишком большая")
+        if member and member.top_role.position >= ctx.author.top_role.position:
+            return await ctx.send("Вы не можете кикнуть человека чья роль выше вашей")
+        
         if member:
             if reason:
                 await member.kick(reason=reason)
@@ -156,6 +179,18 @@ class Moderation(commands.Cog):
         
     @commands.command()
     async def ban(self, ctx, member: discord.Member = None, time = None, *, reason: str = None):
+        await member.send(f"{member}, вы были забанены")
+        if member is None:
+            return await ctx.send("Участник для бана не указан")
+        if member.bot is True:
+                return await ctx.send("Нельзя забанить бота")
+        if member == ctx.author:
+            return await ctx.send("Нельзя забанить самого себя")
+        if len(reason) > 70:
+            return await ctx.send("Причина слишком большая")
+        if member and member.top_role.position >= ctx.author.top_role.position:
+            return await ctx.send("Вы не можете забанить человека чья роль выше вашей")
+
         async def unb(member):
             users = await ctx.guild.bans()
             for ban_user in users:
@@ -254,6 +289,10 @@ class Music(commands.Cog):
             
         url = info['formats'][0]['url']
         voice.play(discord.FFmpegPCMAudio(executable="ffmpeg\\ffmpeg.exe", source=url, **FFMPEG_OPTIONS))
+        
+        if voice.stop():
+            voice.play(discord.FFmpegPCMAudio(executable="ffmpeg\\ffmpeg.exe", source=url, **FFMPEG_OPTIONS))
+
     
     @commands.command()
     async def pause(self, ctx):
