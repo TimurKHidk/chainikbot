@@ -1,4 +1,5 @@
 import discord
+import string
 import aiohttp
 from discord.ext import commands
 import random
@@ -9,6 +10,7 @@ import json
 from typing import Optional
 from easy_pil import Editor, load_image_async, Font
 from discord import File
+import sqlite3
 
 
 YDL_OPTIONS = {'format': 'worstaudio/best', 'noplaylist': 'False', 'simulate': 'True',
@@ -36,6 +38,55 @@ kick_name = ["Как анти air в мк"]
 @bot.event
 async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="Кинопоиск"))
+
+    global base, cur
+    base = sqlite3.connect('chainikbot.db')
+    cur = base.cursor()
+    if base:
+        print('DataBase connected . . . OK')
+
+
+
+@bot.command()
+async def status(ctx):
+    base.execute('CREATE TABLE IF NOT EXISTS {}(userid INT, count INT)'.format(ctx.message.guild.name))
+    base.commit()
+    warning = cur.execute('SELECT * FROM {} WHERE userid == ?'.format(ctx.message.guild.name),(ctx.message.author.id)).fetchone()
+    if warning == None:
+        await ctx.send(f'{ctx.message.author.mention},  у вас нет предупреждений')
+    else:
+        await ctx.send(f'{ctx.message.author.mention},  у вас {warning[1]} предупреждений')
+
+@bot.event
+async def on_message(message):
+    if {i.lower().translate(str.maketrans('', '', string.punctuation)) for i in message.content.split(' ')}.intersection(set(json.load(open('chainikbotdb.json')))) != set():
+        await message.channel.send(f'{message.author.mention}, как тебе не стыдно такие слова использовать??')
+        await message.delete()
+
+        name = message.guild.name
+
+        base.execute('CREATE TABLE IF NOT EXISTS {}(userid INT, count INT)'.format(name))
+        base.commit()
+
+        warning = cur.execute('SELECT * FROM {} WHERE userid == ?'.format(name),(message.author.id)).fetchone()
+
+        if warning == None:
+            cur.execute('INSERT INTO {} VALUES(?, ?)'.format(name),(message.author.id,1)).fetchone()
+            base.commit()
+            await message.channel.send(f'{message.author.mention}, первое предупреждение, на 3 - бан')
+
+        elif warning[1] == 1:
+            cur.execute('UPDATE {} SET count == ? WHERE userid == ?'.format(name),(2,message.author.id))
+            base.commit()
+            await message.channel.send(f'{message.author.mention}, уже 2 предупреждения, на 3 бан')
+
+        elif warning[1] == 2:
+            cur.execute('UPDATE {} SET count == ? WHERE userid == ?'.format(name), (3, message.author.id))
+            base.commit()
+            await message.channel.send(f'{message.author.mention}, забанен за мат в чате')
+            await message.author.ban(reason='Нецензурные выражения')
+
+    await bot.process_commands(message)
 
 
 class Levels(commands.Cog):
