@@ -1,1 +1,2 @@
 # DiscordBot
+Загрузить FFMPEG можно отсюда https://www.youtube.com/redirect?event=video_description&redir_token=QUFFLUhqbFc5dzBXazdMa3RwRUlFM2VydGZ5UzNvbFhfUXxBQ3Jtc0tudU9FUHNfVGRhTnNqRDVDVGtLSU5HdEdaN3hkQXBRWWpsb2FtbjdYSnlpNDd4WkZnbG9KMjR2YkphVV8wVE1OcVBoSU15ZHU2d3gzbjVubENmY09CbndFdjY3OGZ4X0IyZ1JHblBnaDBsMXZVVzY0VQ&q=https%3A%2F%2Fdrive.google.com%2Fdrive%2Ffolders%2F1CUTbOLw_GkyIHcJBxc3toDUTqfrDp8Qu%3Fusp%3Dsharing&v=mOI-j7evA5Q
