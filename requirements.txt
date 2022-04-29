@@ -2,5 +2,4 @@ discord.py==1.7.3
 aiohttp==3.7.4.post0
 youtube-dl==2021.12.17
 googletrans==4.0.0rc1
-typing_extensions==4.2.0
 easy-pil==0.1.6
