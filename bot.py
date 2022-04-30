@@ -452,7 +452,7 @@ class Interactive(commands.Cog):
         embed.add_field(name='{}translate'.format(PREFIX), value='Переводит текст(указать язык на который надо переести и сам текст)')
         embed.add_field(name='{}slap'.format(PREFIX), value='Гифки XD(такие же только shoot и akick)')
         embed.add_field(name='{}chnick'.format(PREFIX), value='Смена никнейма(указать пользователя и ник на который менять)')
-        embed.add_field(name='{}calc'.format(PREFIX), value='Указать тип операции и 2 числа(все через пробел)')
+        embed.add_field(name='{}calc'.format(PREFIX), value='Указать тип операции и 2 числа')
         await ctx.send(embed=embed)
     #Получаем мем с реддита в json а потом рандомно вытаскиваем его оттуда    
     @commands.command()
