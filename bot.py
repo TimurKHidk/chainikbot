@@ -127,8 +127,7 @@ class Levels(commands.Cog):
   async def lhelp(self, ctx):
     embed = discord.Embed(title='Уровни', description="за каждое сообщение по 25Xp")
     embed.add_field(name='{}rank'.format(PREFIX), value='Показывает вашу карточку с уровнем и опытом(чтобы просмтреть чужую укажите ник через @)')
-    embed.add_field(name='{}leaderboard'.format(PREFIX), value='Выдает таблицу рангов')
-    embed.add_field(name='{}rank_reset'.format(PREFIX), value='Сбрасвывает ваш ранк(чтобы сбросить чужую нужна специальная роль)')   
+    embed.add_field(name='{}rank_reset'.format(PREFIX), value='Для сброса чужой роли у вас должна быть роль выше')   
     await ctx.send(embed=embed)
   #Команда считывающая все сообщения пользователя и начисляющая за них опыт и уровень
   @commands.Cog.listener()
@@ -218,6 +217,9 @@ class Levels(commands.Cog):
   @commands.command()
   async def rank_reset(self, ctx: commands.Context, user: Optional[discord.Member]):
     member = user or ctx.author
+    
+    if member and member.top_role.position >= ctx.author.top_role.position:
+      return await ctx.send("Вы не можете сбрасывать ранг людям чья роль выше вашей")
     
     with open("level.json", "r") as f:
       data = json.load(f)
